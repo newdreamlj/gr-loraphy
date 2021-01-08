@@ -1,3 +1,10 @@
+# GNURADIO
+build
+.pyc
+.settings
+.cproject
+.project
+
 # Prerequisites
 *.d
 
