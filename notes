@@ -1,0 +1,3 @@
+$ gr_modtool add -t general -l cpp lora_phy_recorder
+ int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora
+$ gr_modtool makexml lora_phy_recorder

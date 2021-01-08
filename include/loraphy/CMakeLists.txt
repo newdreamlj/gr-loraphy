@@ -23,5 +23,5 @@
 ########################################################################
 install(FILES
     api.h
-    DESTINATION include/loraphy
+    lora_phy_recorder.h DESTINATION include/loraphy
 )

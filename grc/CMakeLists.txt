@@ -19,5 +19,5 @@
 # Boston, MA 02110-1301, USA.
 
 install(FILES
-    DESTINATION share/gnuradio/grc/blocks
+    loraphy_lora_phy_recorder.xml DESTINATION share/gnuradio/grc/blocks
 )

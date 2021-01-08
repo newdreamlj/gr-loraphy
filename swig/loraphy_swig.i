@@ -8,6 +8,9 @@
 %include "loraphy_swig_doc.i"
 
 %{
+#include "loraphy/lora_phy_recorder.h"
 %}
 
 
+%include "loraphy/lora_phy_recorder.h"
+GR_SWIG_BLOCK_MAGIC2(loraphy, lora_phy_recorder);

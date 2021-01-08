@@ -27,6 +27,9 @@ include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
 list(APPEND loraphy_sources
+    lora_phy_recorder_impl.cc
+    buffer.cc
+    fft_fftw.cc
 )
 
 set(loraphy_sources "${loraphy_sources}" PARENT_SCOPE)
@@ -36,7 +39,17 @@ if(NOT loraphy_sources)
 endif(NOT loraphy_sources)
 
 add_library(gnuradio-loraphy SHARED ${loraphy_sources})
-target_link_libraries(gnuradio-loraphy ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES})
+target_link_libraries(gnuradio-loraphy 
+    ${Boost_LIBRARIES} 
+    ${GNURADIO_ALL_LIBRARIES}
+    gnuradio-filter
+    gnuradio-fft
+    gnuradio-runtime
+    gnuradio-blocks
+   -lfftw3f 
+   -lfftw3f_threads
+)
+
 set_target_properties(gnuradio-loraphy PROPERTIES DEFINE_SYMBOL "gnuradio_loraphy_EXPORTS")
 
 if(APPLE)
