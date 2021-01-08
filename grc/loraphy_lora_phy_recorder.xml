@@ -1,38 +1,51 @@
-<?xml version="1.0"?>
 <block>
-  <name>lora_phy_recorder</name>
+  <name>LoRa PHY Recorder</name>
   <key>loraphy_lora_phy_recorder</key>
-  <category>[loraphy]</category>
+  <category>[LoRa PHY]</category>
   <import>import loraphy</import>
   <make>loraphy.lora_phy_recorder($sf, $bw, $fs, $recording_time_ms, $freq_center, $freq_lora)</make>
-  <!-- Make one 'param' node for every Parameter you want settable from the GUI.
-       Sub-nodes:
-       * name
-       * key (makes the value accessible as $keyname, e.g. in the make node)
-       * type -->
   <param>
-    <name>...</name>
-    <key>...</key>
-    <type>...</type>
+    <name>Spreading Factor</name>
+    <key>sf</key>
+    <value>sf</value>
+    <type>int</type>
   </param>
-
-  <!-- Make one 'sink' node per input. Sub-nodes:
-       * name (an identifier for the GUI)
-       * type
-       * vlen
-       * optional (set to 1 for optional inputs) -->
+  <param>
+    <name>Bandwidth</name>
+    <key>bw</key>
+    <value>int(bw)</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Sampling Rate</name>
+    <key>fs</key>
+    <value>int(samp_rate)</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Recording Time (ms)</name>
+    <key>recording_time_ms</key>
+    <value>recording_time_ms</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Freq Center (RX)</name>
+    <key>freq_center</key>
+    <value>int(freq_center)</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Freq LoRa (TX)</name>
+    <key>freq_lora</key>
+    <value>int(freq_lora)</value>
+    <type>int</type>
+  </param>
   <sink>
     <name>in</name>
-    <type><!-- e.g. int, float, complex, byte, short, xxx_vector, ...--></type>
+    <type>complex</type>
   </sink>
-
-  <!-- Make one 'source' node per output. Sub-nodes:
-       * name (an identifier for the GUI)
-       * type
-       * vlen
-       * optional (set to 1 for optional inputs) -->
   <source>
     <name>out</name>
-    <type><!-- e.g. int, float, complex, byte, short, xxx_vector, ...--></type>
+    <type>complex</type>
   </source>
 </block>

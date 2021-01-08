@@ -32,7 +32,7 @@ namespace gr {
 	class lora_phy_recorder_impl : public lora_phy_recorder
     {
 	 private:
-		int sf, bw, fs, log_time_ms;
+		int sf, bw, fs, recording_time_ms;
 		uint64_t freq_center, freq_lora;
 		int sps, log_symbols, nbins, ntaps, deci;
 		fft_complex_t *d_fft;

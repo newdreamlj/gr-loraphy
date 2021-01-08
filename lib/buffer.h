@@ -23,8 +23,9 @@
 #ifndef LORAPHY_BUFFER_H_
 #define LORAPHY_BUFFER_H_
 
-// #include <clora/api.h>
 #include <gnuradio/gr_complex.h>
+#include <string.h>
+#include <volk/volk.h>
 
 namespace gr {
   namespace loraphy {

@@ -20,12 +20,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <buffer.h>
-#include <volk/volk.h>
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include "buffer.h"
 
 namespace gr {
   namespace loraphy {
@@ -43,7 +38,7 @@ namespace gr {
 		if (buf1) {
 			for (int i=0; i<num_of_buffers; i++)
 				volk_free(buf1[i]);
-			volk_free(buf1);
+			delete buf1;
 		}
 	}
 
@@ -55,17 +50,18 @@ namespace gr {
 		this->pos_in_current_buffer = 0;
 		this->is_cnt_buffer_full = false;
 		this->is_popping = false;
-		this->buf1 = (gr_complex**) volk_malloc (sizeof(gr_complex*) * num_of_buffers,  volk_get_alignment ());
+//		this->buf1 = (gr_complex**) volk_malloc (sizeof(gr_complex*) * num_of_buffers,  volk_get_alignment ());
+		this->buf1 = new gr_complex* [num_of_buffers];
 		for (int i=0; i<num_of_buffers; i++) {
 			this->buf1[i] = (gr_complex*) volk_malloc (sizeof(gr_complex) * len_per_buffer,  volk_get_alignment ());
 		}
 	}
 
 	/* push_back returns the number of samples successfully pushed */
-	int Buffer_t::push_back(int len, gr_complex * buf1){
+	int Buffer_t::push_back(int len, gr_complex * buf){
 		if (this->is_cnt_buffer_full) return 0;
 		int safe_len = std::min<int>(this->len_per_buffer - this->pos_in_current_buffer, len);
-		memcpy(this->buf1[this->cnt_active_buffer]+this->pos_in_current_buffer, buf1, sizeof(gr_complex)*safe_len);
+		memcpy(this->buf1[this->cnt_active_buffer]+this->pos_in_current_buffer, buf, sizeof(gr_complex)*safe_len);
 		this->pos_in_current_buffer += safe_len;
 		if (this->pos_in_current_buffer > this->len_per_buffer) {
 			printf("pos_in_current_buffer > len_per_buffer\n");
@@ -85,16 +81,16 @@ namespace gr {
 		return this->is_popping;
 	}
 
-	void Buffer_t::buf_by_offset(int offset, gr_complex** buf1){
+	void Buffer_t::buf_by_offset(int offset, gr_complex** buf){
 		int target = (this->cnt_active_buffer+offset) % this->num_of_buffers;
 		target = (target+this->num_of_buffers) % this->num_of_buffers;
-		*buf1 = this->buf1[target];
+		*buf = this->buf1[target];
 	}
 
-	bool Buffer_t::fetch_cnt_buffer_and_proceed(gr_complex** buf1){
+	bool Buffer_t::fetch_cnt_buffer_and_proceed(gr_complex** buf){
 		if (!this->is_cnt_buffer_full) return false;
 		this->is_cnt_buffer_full = false;
-		*buf1 = this->buf1[this->cnt_active_buffer];
+		*buf = this->buf1[this->cnt_active_buffer];
 		this->pos_in_current_buffer = 0;
 		this->cnt_active_buffer = (this->cnt_active_buffer + 1) % this->num_of_buffers;
 		return true;
@@ -107,7 +103,7 @@ namespace gr {
 		this->cnt_pop_buffer = (this->cnt_active_buffer-buffers_lead+this->num_of_buffers) % this->num_of_buffers;
 	}
 
-	int Buffer_t::pop_buffer(int len,gr_complex* buf1){
+	int Buffer_t::pop_buffer(int len,gr_complex* buf){
 		if (this->remaining_num_of_buffers_to_pop == 0) this->is_popping = false;
 		if (!this->is_popping) return 0;
 		if (this->cnt_pop_buffer == this->cnt_active_buffer) return 0;
@@ -115,8 +111,8 @@ namespace gr {
 		int npop = 0;
 		int safe_len = std::min<int>(this->len_per_buffer - this->pos_in_current_pop_buffer, len);
 		while (safe_len>0) {
-			memcpy(buf1, this->buf1[this->cnt_pop_buffer]+this->pos_in_current_pop_buffer, sizeof(gr_complex)*safe_len);
-			buf1 += safe_len;
+			memcpy(buf, this->buf1[this->cnt_pop_buffer]+this->pos_in_current_pop_buffer, sizeof(gr_complex)*safe_len);
+			buf += safe_len;
 			npop += safe_len;
 			len -= safe_len;
 			this->pos_in_current_pop_buffer += safe_len;

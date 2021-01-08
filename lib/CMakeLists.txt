@@ -39,11 +39,11 @@ if(NOT loraphy_sources)
 endif(NOT loraphy_sources)
 
 add_library(gnuradio-loraphy SHARED ${loraphy_sources})
+
 target_link_libraries(gnuradio-loraphy 
     ${Boost_LIBRARIES} 
     ${GNURADIO_ALL_LIBRARIES}
     gnuradio-filter
-    gnuradio-fft
     gnuradio-runtime
     gnuradio-blocks
    -lfftw3f 

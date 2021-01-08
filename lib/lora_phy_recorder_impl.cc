@@ -47,22 +47,22 @@ namespace gr {
 			  sf(sf),
 			  bw(sf),
 			  fs(fs),
-			  log_time_ms(log_time_ms),
+			  recording_time_ms(recording_time_ms),
 			  freq_center(freq_center),
 			  freq_lora(freq_lora)
     {
     	sps = (int) (fs/bw*pow(2,sf));
-    	log_symbols = (int)round(log_time_ms/(1000*pow(2,sf)/bw));
+    	log_symbols = (int)round(recording_time_ms/(1000*pow(2,sf)/bw));
     	nbins = pow(2,sf);
     	deci = (int)fs/bw;
-    	ring_buffer.init(1024, sps);
+    	ring_buffer.init(4096, sps);
     	filter_taps_dot_freq_cov = (gr_complex *) volk_malloc (sizeof(gr_complex) * ntaps,  volk_get_alignment ());
     	freq_cov_phase_calibration = (gr_complex *) volk_malloc (sizeof(gr_complex) * nbins,  volk_get_alignment ());
     	downchirp = (gr_complex*) volk_malloc (sizeof(gr_complex) * nbins,  volk_get_alignment ());
     	downchirp_dot_phase_calibration = (gr_complex*) volk_malloc (sizeof(gr_complex) * nbins,  volk_get_alignment ());
 		baseband = (gr_complex*) volk_malloc (sizeof(gr_complex) * nbins,  volk_get_alignment ());
 		mag = (float*) volk_malloc (sizeof(float) * nbins,  volk_get_alignment ());
-		buf1 = (gr_complex*) volk_malloc (sizeof(gr_complex) * sps,  volk_get_alignment ());
+		buf1 = NULL;//(gr_complex*) volk_malloc (sizeof(gr_complex) * sps,  volk_get_alignment ());
 		d_fft = new fft_complex_t(nbins, true);
 
         const int alignment = volk_get_alignment() / sizeof(gr_complex);
@@ -102,6 +102,7 @@ namespace gr {
 
 		// Create reference down-chirp merged with phase calibration
     	volk_32fc_x2_multiply_32fc(downchirp_dot_phase_calibration, downchirp, freq_cov_phase_calibration, nbins);
+    	printf("Init done with filter taps=%d\n", ntaps);
     }
 
     /*
@@ -114,7 +115,6 @@ namespace gr {
 		volk_free(freq_cov_phase_calibration);
 		volk_free(filter_taps_dot_freq_cov);
     	volk_free(mag);
-    	volk_free(buf1);
     	volk_free(baseband);
 		delete d_fft;
     }
@@ -122,7 +122,7 @@ namespace gr {
     void
     lora_phy_recorder_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
     {
-    	ninput_items_required[0] = (int)noutput_items/4;
+    	ninput_items_required[0] = (int)(noutput_items/4);
     }
 
     int lora_phy_recorder_impl::lora_detect(gr_complex* buf){
@@ -144,7 +144,7 @@ namespace gr {
 		volk_32fc_magnitude_32f(mag, (gr_complex*)d_fft->get_outbuf(), nbins);
 		volk_32f_index_max_16u(&target, mag, nbins);
 		volk_32f_accumulator_s32f(&sum, mag, nbins);
-		if (mag[target]>4*(sum-mag[target])/nbins){
+		if (mag[target]>7*(sum-mag[target])/(nbins-1)){
 			return target;
 		}
 		else
@@ -171,14 +171,14 @@ namespace gr {
 		* 3. popping
 		* */
 
-        ninput = std::min(ninput_items[0],ninput_items[1]);
+        ninput = ninput_items[0];
 
     	if (nout<noutput_items && ring_buffer.is_popping_enabled()){
     		nout += ring_buffer.pop_buffer(noutput_items-nout, (gr_complex *)out[0]+nout);
     		if (!ring_buffer.is_popping_enabled()) {
     			timeval tv;
     		    gettimeofday(&tv,NULL);
-				printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,log_time_ms);
+				printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,recording_time_ms);
     		}
     	}
 
@@ -212,7 +212,7 @@ namespace gr {
         		if (!ring_buffer.is_popping_enabled()) {
         			timeval tv;
         		    gettimeofday(&tv,NULL);
-					printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,log_time_ms);
+					printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,recording_time_ms);
         		}
         	}
         }
