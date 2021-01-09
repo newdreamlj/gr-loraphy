@@ -28,34 +28,34 @@
 #include <volk/volk.h>
 
 namespace gr {
-  namespace loraphy {
+    namespace loraphy {
 
-	class Buffer_t {
-	private:
-		gr_complex ** buf1;
-		/* parameters related to samples in one block */
-		int len_per_buffer, pos_in_current_buffer;
-		/* parameters related to buffer blocks */
-		int num_of_buffers, cnt_active_buffer;
-		/* parameters related to popping */
-		bool is_cnt_buffer_full, is_popping;
-		int remaining_num_of_buffers_to_pop, pos_in_current_pop_buffer, cnt_pop_buffer;
+        class Buffer_t {
+        private:
+            gr_complex ** buf1;
+            /* parameters related to samples in one block */
+            int len_per_buffer, pos_in_current_buffer;
+            /* parameters related to buffer blocks */
+            int num_of_buffers, cnt_active_buffer;
+            /* parameters related to popping */
+            bool is_cnt_buffer_full, is_popping;
+            int remaining_num_of_buffers_to_pop, pos_in_current_pop_buffer, cnt_pop_buffer;
 
-	public:
-		Buffer_t();
-		~Buffer_t();
-		void init(int num_of_buffers, int len_per_buffer);
-		/* push_back returns the number of samples successfully pushed */
-		int push_back(int len, gr_complex * buf1);
-		int pop_buffer(int len,gr_complex* buf1);
-		bool is_buffer_ready();
-		bool is_popping_enabled();
-		bool fetch_cnt_buffer_and_proceed(gr_complex** buf1);
-		void buf_by_offset(int offset,gr_complex** buf1);
-		void enable_popping(int buffers_to_pop,int buffers_lead);
+        public:
+            Buffer_t();
+            ~Buffer_t();
+            void init(int num_of_buffers, int len_per_buffer);
+            /* push_back returns the number of samples successfully pushed */
+            int push_back(int len, gr_complex * buf1);
+            int pop_buffer(int len,gr_complex* buf1);
+            bool is_buffer_ready();
+            bool is_popping_enabled();
+            bool fetch_cnt_buffer_and_proceed(gr_complex** buf1);
+            void buf_by_offset(int offset,gr_complex** buf1);
+            void enable_popping(int buffers_to_pop,int buffers_lead);
 
-	}; //Buffer_t
-  } /* namespace loraphy */
+        }; //Buffer_t
+    } /* namespace loraphy */
 } /*namespace gr */
 
 #endif /* LORAPHY_BUFFER_H_ */

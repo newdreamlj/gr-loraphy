@@ -52,35 +52,35 @@ namespace gr {
      * \brief FFT: complex in, complex out
      * \ingroup misc
      */
-    class  fft_complex_t {
-    public:
-      int         d_fft_size;
-      fftwf_complex *d_inbuf;
-      fftwf_complex *d_outbuf;
-      void       *d_plan;
+        class  fft_complex_t {
+          public:
+            int         d_fft_size;
+            fftwf_complex *d_inbuf;
+            fftwf_complex *d_outbuf;
+          void       *d_plan;
 
-      fft_complex_t(int fft_size, bool forward = true);
-      ~fft_complex_t();
+          fft_complex_t(int fft_size, bool forward = true);
+          ~fft_complex_t();
 
-      /*
-       * These return pointers to buffers owned by fft_impl_fft_complex
-       * into which input and output take place. It's done this way in
-       * order to ensure optimal alignment for SIMD instructions.
-       */
-      fftwf_complex *get_inbuf()  const { return d_inbuf; }
-      fftwf_complex *get_outbuf() const { return d_outbuf; }
+          /*
+           * These return pointers to buffers owned by fft_impl_fft_complex
+           * into which input and output take place. It's done this way in
+           * order to ensure optimal alignment for SIMD instructions.
+           */
+          fftwf_complex *get_inbuf()  const { return d_inbuf; }
+          fftwf_complex *get_outbuf() const { return d_outbuf; }
 
-      int inbuf_length()  const { return d_fft_size; }
-      int outbuf_length() const { return d_fft_size; }
+          int inbuf_length()  const { return d_fft_size; }
+          int outbuf_length() const { return d_fft_size; }
 
-      /*!
-       * compute FFT. The input comes from inbuf, the output is placed in
-       * outbuf.
-       */
-      void execute();
-//      void execute_dft(fftw_complex *,fftw_complex *);
-    };
-  } /* namespace loraphy */
+          /*!
+           * compute FFT. The input comes from inbuf, the output is placed in
+           * outbuf.
+           */
+          void execute();
+    //      void execute_dft(fftw_complex *,fftw_complex *);
+        };
+    } /* namespace loraphy */
 } /*namespace gr */
 
 #endif /* _LORAPHY_FFTW_H_ */

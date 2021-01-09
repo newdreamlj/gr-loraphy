@@ -56,52 +56,47 @@ static int my_fftwf_read_char(void *f) { return fgetc((FILE *) f); }
 //namespace fs = boost::filesystem;
 
 namespace gr {
-  namespace loraphy {
+    namespace loraphy {
 
-  	fft_complex_t::fft_complex_t(int fft_size, bool forward)
-  	{
-        d_fft_size = fft_size;
-        d_inbuf = (fftwf_complex *) volk_malloc (sizeof (gr_complex) * fft_size, volk_get_alignment ());
-        d_outbuf = (fftwf_complex *) volk_malloc (sizeof (gr_complex) * fft_size, volk_get_alignment ());
-//        d_inbuf = (fftwf_complex *) fftwf_malloc (sizeof (fftwf_complex) * d_fft_size);
-//        d_outbuf = (fftwf_complex *) fftwf_malloc (sizeof (fftwf_complex) * d_fft_size);
+        fft_complex_t::fft_complex_t(int fft_size, bool forward)
+        {
+            d_fft_size = fft_size;
+            d_inbuf = (fftwf_complex *) volk_malloc (sizeof (gr_complex) * fft_size, volk_get_alignment ());
+            d_outbuf = (fftwf_complex *) volk_malloc (sizeof (gr_complex) * fft_size, volk_get_alignment ());
 
-		#ifdef FFTW3F_THREADS
-			  printf("fft multi thread\n");
-			  fftwf_init_threads();
-			  fftwf_plan_with_nthreads(4);
-		#endif
+            #ifdef FFTW3F_THREADS
+                  printf("fft multi thread\n");
+                  fftwf_init_threads();
+                  fftwf_plan_with_nthreads(4);
+            #endif
 
-      d_plan = fftwf_plan_dft_1d (fft_size,
-                  d_inbuf,
-                  d_outbuf,
-                  forward ? FFTW_FORWARD : FFTW_BACKWARD,
-                  FFTW_ESTIMATE);
+            boost::mutex::scoped_lock scoped_lock;
+            //static boost::mutex &mutex();
 
-      if (d_plan == NULL) {
-        fprintf(stderr, "gr::fft: error creating plan\n");
-      }
-    }
+            d_plan = fftwf_plan_dft_1d (fft_size,
+                d_inbuf,
+                d_outbuf,
+                forward ? FFTW_FORWARD : FFTW_BACKWARD,
+                FFTW_ESTIMATE);
 
-    fft_complex_t::~fft_complex_t()
-    {
-      // fftwf_destroy_plan ((fftwf_plan) d_plan);
-      // fftw_cleanup_threads(); this function cause segmentation fault, no idea why
-      volk_free(d_inbuf);
-      volk_free(d_outbuf);
-    }
+            if (d_plan == NULL) {
+                fprintf(stderr, "gr::fft: error creating plan\n");
+            }
+        }
+
+        fft_complex_t::~fft_complex_t()
+        {
+          // fftwf_destroy_plan ((fftwf_plan) d_plan);
+          // fftw_cleanup_threads(); this function cause segmentation fault, no idea why
+          volk_free(d_inbuf);
+          volk_free(d_outbuf);
+        }
 
 
-    void fft_complex_t::execute()
-    {
-        fftwf_execute((fftwf_plan) d_plan);
-    }
+        void fft_complex_t::execute()
+        {
+            fftwf_execute((fftwf_plan) d_plan);
+        }
 
-//    void fft_complex_t::execute_dft(fftw_complex *in, fftw_complex *out)
-//    {
-//    	//void fftw_execute_dft( const fftw_plan p, fftw_complex *in, fftw_complex *out);
-//    	fftwf_execute_dft((fftwf_plan) d_plan, in, out);
-//        //fftwf_execute((fftwf_plan) d_plan);
-//    }
-  } /* namespace fft */
+    } /* namespace fft */
 } /* namespace gr */
