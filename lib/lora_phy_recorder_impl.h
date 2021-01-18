@@ -36,10 +36,11 @@ namespace gr {
             uint64_t freq_center, freq_lora;
             int sps, log_symbols, nbins, ntaps, deci;
             fft_complex_t *d_fft;
+            int n_chan;
             // downchirp .* phase_caused_by_freq_cov:2^SF,  filter_taps .* freq_cov:ntap
             gr_complex *filter_taps_dot_freq_cov, * freq_cov_phase_calibration, *downchirp, *downchirp_dot_phase_calibration;
 
-            Buffer_t ring_buffer;
+            Buffer_t * ring_buffers;
             float *mag;
 
             gr_complex * buf1, * baseband;
@@ -47,7 +48,7 @@ namespace gr {
             int lora_detect(gr_complex*);
 
           public:
-            lora_phy_recorder_impl(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora);
+            lora_phy_recorder_impl(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora,int n_chan);
             ~lora_phy_recorder_impl();
 
           // Where all the action really happens

@@ -3,7 +3,7 @@
   <key>loraphy_lora_phy_recorder</key>
   <category>[LoRa PHY]</category>
   <import>import loraphy</import>
-  <make>loraphy.lora_phy_recorder($sf, $bw, $fs, $recording_time_ms, $freq_center, $freq_lora)</make>
+  <make>loraphy.lora_phy_recorder($sf, $bw, $fs, $recording_time_ms, $freq_center, $freq_lora, $n_chan)</make>
   <param>
     <name>Spreading Factor</name>
     <key>sf</key>
@@ -40,12 +40,20 @@
     <value>int(freq_lora)</value>
     <type>int</type>
   </param>
+  <param>
+    <name>Number of Channels</name>
+    <key>n_chan</key>
+    <value>1</value>
+    <type>int</type>
+  </param>
   <sink>
     <name>in</name>
     <type>complex</type>
+    <nports>$n_chan</nports>
   </sink>
   <source>
     <name>out</name>
     <type>complex</type>
+    <nports>$n_chan</nports>
   </source>
 </block>

@@ -31,31 +31,34 @@ namespace gr {
   namespace loraphy {
 
     lora_phy_recorder::sptr
-    lora_phy_recorder::make(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora)
+    lora_phy_recorder::make(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora,int n_chan)
     {
       return gnuradio::get_initial_sptr
-        (new lora_phy_recorder_impl(sf, bw, fs, recording_time_ms, freq_center, freq_lora));
+        (new lora_phy_recorder_impl(sf, bw, fs, recording_time_ms, freq_center, freq_lora, n_chan));
     }
 
     /*
      * The private constructor
      */
-    lora_phy_recorder_impl::lora_phy_recorder_impl(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora)
+    lora_phy_recorder_impl::lora_phy_recorder_impl(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora,int n_chan)
       : gr::block("lora_phy_recorder",
-              gr::io_signature::make(1, 1, sizeof(gr_complex)),
-              gr::io_signature::make(1, 1, sizeof(gr_complex))),
+              gr::io_signature::make(n_chan, n_chan, sizeof(gr_complex)),
+              gr::io_signature::make(n_chan, n_chan, sizeof(gr_complex))),
               sf(sf),
               bw(sf),
               fs(fs),
               recording_time_ms(recording_time_ms),
               freq_center(freq_center),
-              freq_lora(freq_lora)
+              freq_lora(freq_lora),
+			  n_chan(n_chan)
     {
         sps = (int) (fs/bw*pow(2,sf));
         log_symbols = (int)round(recording_time_ms/(1000*pow(2,sf)/bw));
         nbins = pow(2,sf);
         deci = (int)fs/bw;
-        ring_buffer.init(4096, sps);
+        ring_buffers = new Buffer_t [n_chan];
+        for (int i=0; i<n_chan; i++)
+        	ring_buffers[i].init(4096, sps);
 
         filter_taps_dot_freq_cov = (gr_complex *) volk_malloc (sizeof(gr_complex) * ntaps,  volk_get_alignment ());
         freq_cov_phase_calibration = (gr_complex *) volk_malloc (sizeof(gr_complex) * nbins,  volk_get_alignment ());
@@ -121,6 +124,7 @@ namespace gr {
         volk_free(downchirp);
         volk_free(freq_cov_phase_calibration);
         volk_free(filter_taps_dot_freq_cov);
+        delete [] ring_buffers;
         printf("destructor finished\n");
     }
 
@@ -166,6 +170,7 @@ namespace gr {
         gr_complex **out = (gr_complex **) &output_items[0];
         int cnt = 0, ninput;
         int nout=0;
+        gr_complex *buf_tmp;
 
         // Do <+signal processing+>
         // Tell runtime system how many input items we consumed on
@@ -177,27 +182,54 @@ namespace gr {
         * */
 
         ninput = ninput_items[0];
+        for (int k=1; k<n_chan; k++)
+        	ninput = std::min(ninput, ninput_items[k]);
 
-        if (nout<noutput_items && ring_buffer.is_popping_enabled()){
-            nout += ring_buffer.pop_buffer(noutput_items-nout, (gr_complex *)out[0]+nout);
-            if (!ring_buffer.is_popping_enabled()) {
-                timeval tv;
-                gettimeofday(&tv,NULL);
-                printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,recording_time_ms);
+        if (nout<noutput_items && ring_buffers[0].is_popping_enabled()){
+        	int len = ring_buffers[0].pop_buffer(noutput_items-nout, (gr_complex *)out[0]+nout),tmp;
+            for (int k=1; k<n_chan; k++) {
+				tmp = ring_buffers[k].pop_buffer(noutput_items-nout, (gr_complex *)out[k]+nout);
+				if (tmp!=len){
+					timeval tv;
+					gettimeofday(&tv,NULL);
+					printf("[%ld.%06ld] Data logging channels out of sync...\n", tv.tv_sec,tv.tv_usec);
+				}
+            }
+            nout += len;
+
+			if (!ring_buffers[0].is_popping_enabled()) {
+				timeval tv;
+				gettimeofday(&tv,NULL);
+				printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,recording_time_ms);
             }
         }
 
         while (cnt < ninput) {
-            cnt += ring_buffer.push_back(ninput-cnt, (gr_complex *)in[0]+cnt);
-            if (ring_buffer.is_buffer_ready()){
-                ring_buffer.fetch_cnt_buffer_and_proceed(&buf1);
-                if (!ring_buffer.is_popping_enabled()){
+        	int len = ring_buffers[0].push_back(ninput-cnt, (gr_complex *)in[0]+cnt), tmp;
+            for (int k=1; k<n_chan; k++) {
+            	tmp = ring_buffers[k].push_back(ninput-cnt, (gr_complex *)in[k]+cnt);
+				if (tmp!=len){
+					timeval tv;
+					gettimeofday(&tv,NULL);
+					printf("[%ld.%06ld] Data logging channels input out of sync...\n", tv.tv_sec,tv.tv_usec);
+				}
+            }
+            cnt += len;
+            if (ring_buffers[0].is_buffer_ready()){
+                ring_buffers[0].fetch_cnt_buffer_and_proceed(&buf1);
+                for (int k=1; k<n_chan; k++) {
+                    ring_buffers[k].fetch_cnt_buffer_and_proceed(&buf_tmp);
+                }
+                if (!ring_buffers[0].is_popping_enabled()){
                     // Here, buffer is ready for detection
                     // If buffer is popping, no need to do any detection.
                     // We assume buffered samples are not too long, so we have enough time waiting for popping to finished before the next detection
                     if (lora_detect(buf1)>-1) {
                         // lora detected
-                        ring_buffer.enable_popping(log_symbols,12);
+                        ring_buffers[0].enable_popping(log_symbols,12);
+                        for (int k=1; k<n_chan; k++) {
+                            ring_buffers[k].enable_popping(log_symbols,12);
+                        }
                         timeval tv;
                         gettimeofday(&tv,NULL);
                         pmt::pmt_t sec = pmt::from_long(tv.tv_sec);
@@ -212,12 +244,22 @@ namespace gr {
                 }
             }
 
-            if (nout<noutput_items && ring_buffer.is_popping_enabled()){
-                nout += ring_buffer.pop_buffer(noutput_items-nout, (gr_complex *)out[0]+nout);
-                if (!ring_buffer.is_popping_enabled()) {
-                    timeval tv;
-                    gettimeofday(&tv,NULL);
-                    printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,recording_time_ms);
+            if (nout<noutput_items && ring_buffers[0].is_popping_enabled()){
+            	int len = ring_buffers[0].pop_buffer(noutput_items-nout, (gr_complex *)out[0]+nout),tmp;
+                for (int k=1; k<n_chan; k++) {
+    				tmp = ring_buffers[k].pop_buffer(noutput_items-nout, (gr_complex *)out[k]+nout);
+    				if (tmp!=len){
+    					timeval tv;
+    					gettimeofday(&tv,NULL);
+    					printf("[%ld.%06ld] Data logging channels out of sync...\n", tv.tv_sec,tv.tv_usec);
+    				}
+                }
+                nout += len;
+
+    			if (!ring_buffers[0].is_popping_enabled()) {
+    				timeval tv;
+    				gettimeofday(&tv,NULL);
+    				printf("[%ld.%06ld] Data logging finished (elapsed %d ms)...\n", tv.tv_sec,tv.tv_usec,recording_time_ms);
                 }
             }
         }

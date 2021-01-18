@@ -38,7 +38,7 @@ namespace gr {
             if (buf1) {
                 for (int i=0; i<num_of_buffers; i++)
                     volk_free(buf1[i]);
-                delete buf1;
+                delete [] buf1;
             }
         }
 

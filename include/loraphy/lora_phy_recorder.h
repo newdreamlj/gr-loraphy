@@ -45,7 +45,7 @@ namespace gr {
        * class. loraphy::lora_phy_recorder::make is the public interface for
        * creating new instances.
        */
-      static sptr make(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora);
+      static sptr make(int sf, int bw, int fs, int recording_time_ms, uint64_t freq_center, uint64_t freq_lora, int n_chan);
     };
 
   } // namespace loraphy
